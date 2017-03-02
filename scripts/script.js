@@ -5,9 +5,9 @@ var lifeP;
 var count = 0;
 var target;
 var maxforce = 0.5;
-var reachedGoal = 0;
-var time = 0;
 
+var success = 0;
+var stopMutation = false;
 
 var rx = 0;
 var ry = 200;
@@ -29,7 +29,7 @@ function draw() {
   if (count === lifespan) {
     population.evaluate();
     population.selection();
-
+    if (success > 200) stopMutation = true;
     count = 0;
   }
 
@@ -64,15 +64,12 @@ function Population() {
     }
 
     this.matingpool = [];
-
     for (var i = 0; i < this.popsize; i++) {
       var n = this.rockets[i].fitness * 100;
 
       for (var j = 0; j < n; j++) {
         this.matingpool.push(this.rockets[i]);
       }
-
-      this.rockets[i].time = 0;
     }
   }
 
@@ -122,11 +119,12 @@ function DNA(genes) {
   }
 
   this.mutation = function() {
-
-    for (var i = 0; i < this.genes.length; i++) {
-      if (random(1) < 0.005) {
-        this.genes[i] = p5.Vector.random2D();
-        this.genes[i].setMag(maxforce);
+    if (stopMutation === false) {
+      for (var i = 0; i < this.genes.length; i++) {
+        if (random(1) < 0.01) {
+          this.genes[i] = p5.Vector.random2D();
+          this.genes[i].setMag(maxforce);
+        }
       }
     }
   }
@@ -157,24 +155,18 @@ function Rocket(dna) {
 
     if (this.completed) {
       this.fitness *= 10;
-      this.fitness += (10 / Math.exp(this.time)) * 3;
-      reachedGoal++;
+      success++;
     }
     if (this.crashed) {
-      this.fitness /= 10;
+      this.fitness = 0.5;
     }
   }
-
-  this.stopWatch = setInterval(function() {
-    this.time++;
-  }, 250);
 
   this.update = function() {
     var d = dist(this.pos.x, this.pos.y, target.x, target.y);
     if (d < 10) {
       this.completed = true;
       this.pos = target.copy();
-      clearInterval(this.stopWatch);
     }
 
     if (this.pos.x > rx && this.pos.x < rx + rw && this.pos.y > ry && this.pos.y < ry + rh) {
